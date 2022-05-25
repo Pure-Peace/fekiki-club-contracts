@@ -50,6 +50,9 @@ const DEF_GET_CONTRACT_FOR_ENVIRONMENT = {
   FekikiClub: generateEnvNameContractDefHelper({
     hardhat: 'FekikiClub',
   }),
+  TestFekikiClub: generateEnvNameContractDefHelper({
+    hardhat: 'TestFekikiClub',
+  }),
   MockVRFSystem: generateEnvNameContractDefHelper({
     hardhat: 'MockVRFSystem',
   }),
