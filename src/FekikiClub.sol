@@ -50,7 +50,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     uint256 public constant UNIT_PRICE = 0.1 ether;
     uint256 public constant MAX_SUPPLY = 10000;
-    uint256 public constant TOTAL_MYSTERY_BOXES = 180;
+    uint256 public constant TOTAL_MYSTERY_BOXES = 10000;
     bytes32 public constant MERKLE_ROOT_HASH = 0x0c49cea42462c6e5f515343ec6496f739286ad6642b774100c3948cf1ce1c6e2;
 
     uint256 public constant DEV_RESERVE = 180;
@@ -79,7 +79,6 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     ) ERC721A("FekikiClub", "FEKIKI") VRFConsumerBaseV2(_vrfCoordinator) {
         VRF_COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
         chainlinkConfig = _chainlinkConfig;
-        _safeMint(msg.sender, 180);
     }
 
     modifier supplyChecker(uint256 amount) {
