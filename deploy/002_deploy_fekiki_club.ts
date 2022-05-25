@@ -1,25 +1,35 @@
-/* eslint-disable prefer-const */
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { genGetContractWith } from '../test/utils/genHelpers';
 import { FekikiClub } from '../typechain/FekikiClub';
 import { deployConfig, waitContractCall } from '../scripts/utils';
 import { getContractForEnvironment } from '../test/utils/getContractForEnvironment';
-import { MockVRFSystem } from '../typechain';
+import { MockVRFSystem as IMockVRFSystem, TestFekikiClub } from '../typechain';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
-  let {
+  const {
     vrfCoordinator,
     chainlinkConfig
   } = deployConfig();
 
   if (hre.network.name === 'hardhat') {
-    const MockVRFSystem = await getContractForEnvironment<MockVRFSystem>(hre, "MockVRFSystem")
-    vrfCoordinator = MockVRFSystem.address
+    const MockVRFSystem = await getContractForEnvironment<IMockVRFSystem>(hre, "MockVRFSystem")
+
+    const fekikiDeployments = await deploy('TestFekikiClub', {
+      from: deployer,
+      contract: 'TestFekikiClub',
+      args: [MockVRFSystem.address, chainlinkConfig],
+      log: true,
+      skipIfAlreadyDeployed: false,
+      gasLimit: 5500000,
+    });
+    await waitContractCall(await MockVRFSystem.setFekikiClub(fekikiDeployments.address))
+
+    return
   }
 
   const fekikiDeployments = await deploy('FekikiClub', {
@@ -36,11 +46,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     fekikiDeployments.address,
     deployer
   );
-
-  if (hre.network.name === 'hardhat') {
-    const MockVRFSystem = await getContractForEnvironment<MockVRFSystem>(hre, "MockVRFSystem")
-    await waitContractCall(await MockVRFSystem.setFekikiClub(fekikiClub.address))
-  }
 };
 export default func;
 func.id = 'deploy_fekiki_club';
