@@ -187,7 +187,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      * @param _amount Minting amount of tokens.
      * @param _to Mint to target address.
      */
-    function mintDevTeam(uint256 _amount, address _to) external onlyOwner supplyChecker(_amount) {
+    function mintDevTeam(uint256 _amount, address _to) public onlyOwner supplyChecker(_amount) {
         numberMintedDevTeam += _amount;
         require(numberMintedDevTeam <= DEV_RESERVE, "Insufficient dev minting supply");
         _safeMint(_to, _amount);
@@ -197,7 +197,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      * @dev Available after public minting starts.
      * @param _amount Minting amount of tokens.
      */
-    function mint(uint256 _amount) external payable supplyChecker(_amount) {
+    function mint(uint256 _amount) public payable supplyChecker(_amount) {
         numberPublicMinted += _amount;
         require(numberPublicMinted <= PUB_MINT_SUPPLY, "Insufficient public minting supply");
 
@@ -216,7 +216,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      * @param _amount Minting amount of tokens.
      * @param _merkleProof Merkle tree proof corresponding to the user address (can be generated using javascript)
      */
-    function mintWhitelist(uint256 _amount, bytes32[] calldata _merkleProof) external payable supplyChecker(_amount) {
+    function mintWhitelist(uint256 _amount, bytes32[] calldata _merkleProof) public payable supplyChecker(_amount) {
         _merkleVerify(_merkleProof);
         require(
             (block.timestamp >= WHITELIST_MINTING_START) && block.timestamp <= WHITELIST_MINTING_END,
@@ -234,6 +234,45 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
         require(msg.value >= (_amount * UNIT_PRICE), "Underpayment");
         _safeMint(msg.sender, _amount);
+    }
+
+    /**
+     * @dev Call `mintDevTeamAndReveal`, then reveal
+     */
+    function mintDevTeamAndReveal(uint256 _amount, address _to) external payable onlyOwner {
+        uint256 _startIndex = _currentIndex;
+        mintDevTeam(_amount, _to);
+        revealWithRange(_startIndex, _amount);
+    }
+
+    /**
+     * @dev Call `mintWhitelist`, then reveal
+     */
+    function mintWhitelistAndReveal(uint256 _amount, bytes32[] calldata _merkleProof) external payable {
+        uint256 _startIndex = _currentIndex;
+        mintWhitelist(_amount, _merkleProof);
+        revealWithRange(_startIndex, _amount);
+    }
+
+    /**
+     * @dev Call `mint`, then reveal
+     */
+    function mintAndReveal(uint256 _amount) external payable {
+        uint256 _startIndex = _currentIndex;
+        mint(_amount);
+        revealWithRange(_startIndex, _amount);
+    }
+
+    /**
+     * @dev Reveal with token id num range
+     */
+    function revealWithRange(uint256 _startIndex, uint256 _amount) public {
+        uint256 _end = _startIndex + _amount;
+        uint256[] memory _temp = new uint256[](_amount);
+        for (uint256 i = 0; i < _end; i++) {
+            _temp[i] = _startIndex++;
+        }
+        requestTokenReveal(_temp);
     }
 
     /**
