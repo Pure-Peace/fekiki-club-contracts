@@ -1,21 +1,21 @@
-import {Signer, Contract} from 'ethers';
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {genGetContractWith} from './genHelpers';
+import { Signer, Contract } from 'ethers';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { genGetContractWith } from './genHelpers';
 type THardHatLookupHelper<T> = (
   hre: HardhatRuntimeEnvironment,
   contractSlug: string,
   signer?: string | Signer | undefined
 ) => Promise<T>;
 function generateEnvNameContractDefHelper(
-  networkToContract: {[networkName: string]: string},
-  {abiName, lookupName}: {abiName?: string; lookupName?: string} = {}
+  networkToContract: { [networkName: string]: string },
+  { abiName, lookupName }: { abiName?: string; lookupName?: string } = {}
 ): THardHatLookupHelper<any> {
   return async (
     hre: HardhatRuntimeEnvironment,
     contractSlug: string,
     signer?: string | Signer | undefined
   ) => {
-    const {getContract, getContractAt} = genGetContractWith(hre);
+    const { getContract, getContractAt } = genGetContractWith(hre);
     const addressOrAbi =
       Object.prototype.hasOwnProperty.call(
         networkToContract,
@@ -50,6 +50,9 @@ const DEF_GET_CONTRACT_FOR_ENVIRONMENT = {
   FekikiClub: generateEnvNameContractDefHelper({
     hardhat: 'FekikiClub',
   }),
+  MockVRFSystem: generateEnvNameContractDefHelper({
+    hardhat: 'MockVRFSystem',
+  }),
 };
 type TContractSlug = keyof typeof DEF_GET_CONTRACT_FOR_ENVIRONMENT;
 
@@ -64,5 +67,5 @@ async function getContractForEnvironment<T>(
     signer
   );
 }
-export type {TContractSlug};
-export {getContractForEnvironment};
+export type { TContractSlug };
+export { getContractForEnvironment };

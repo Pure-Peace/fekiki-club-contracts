@@ -31,6 +31,15 @@ const config: { [key: string]: DeployConfig } = {
       callbackGasLimit: 0
     }
   },
+  hardhat: {
+    vrfCoordinator: '',
+    chainlinkConfig: {
+      keyHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+      subscriptionId: 0,
+      requestConfirms: 0,
+      callbackGasLimit: 0
+    }
+  },
 };
 
 export default config;
