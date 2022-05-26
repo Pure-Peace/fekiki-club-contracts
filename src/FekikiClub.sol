@@ -268,9 +268,14 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      */
     function revealWithRange(uint256 _startIndex, uint256 _amount) public {
         uint256 _end = _startIndex + _amount;
+        require(_end <= _totalMinted() - 1, "out of range");
+
         uint256[] memory _temp = new uint256[](_amount);
-        for (uint256 i = 0; i < _end; i++) {
-            _temp[i] = _startIndex++;
+        for (uint256 i = 0; i < _end; ) {
+            unchecked {
+                _temp[i] = _startIndex++;
+                i++;
+            }
         }
         requestTokenReveal(_temp);
     }
@@ -322,7 +327,9 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             "Whitelist minting is not over"
         );
         require(PUB_MINT_SUPPLY == 0, "Pub minting is already started");
-        PUB_MINT_SUPPLY = PERSONAL_WHITELIST_MINT_LIMIT - numberWhitelistMinted + 1000;
+        unchecked {
+            PUB_MINT_SUPPLY = WHITELIST_MINTING_SUPPLY - numberWhitelistMinted + 1000;
+        }
     }
 
     /**
