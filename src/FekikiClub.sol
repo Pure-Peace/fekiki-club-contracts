@@ -107,7 +107,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             return "https://unrevealed-token-metadata-URI/";
         }
 
-        return string(abi.encodePacked(_baseURI(), _tokenId.toString()));
+        return string(abi.encodePacked(_baseURI(), uint256(_tokenRevealData[_tokenId].revealId).toString()));
     }
 
     /**
