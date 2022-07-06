@@ -110,6 +110,10 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         return string(abi.encodePacked(_baseURI(), uint256(_tokenRevealData[_tokenId].revealId).toString()));
     }
 
+    function userMinted(address user) external view returns (UserMintedData memory) {
+        return _userMinted[user];
+    }
+
     /**
      * @dev Returns the number of tokens that have been mint.
      */
