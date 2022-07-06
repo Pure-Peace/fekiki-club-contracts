@@ -124,9 +124,13 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         return _numberMinted(_minter);
     }
 
-    function tokenRevealData(uint256 _tokenId) external view returns (RevealData memory) {
-        if (!_exists(_tokenId)) revert OwnerQueryForNonexistentToken();
-        return _tokenRevealData[_tokenId];
+    function tokenRevealData(uint256[] calldata _tokenIds) external view returns (RevealData[] memory) {
+        RevealData[] memory data = new RevealData[](_tokenIds.length);
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            if (!_exists(_tokenIds[i])) revert OwnerQueryForNonexistentToken();
+            data[i] = _tokenRevealData[_tokenIds[i]];
+        }
+        return data;
     }
 
     function _startTokenId() internal view virtual override returns (uint256) {
