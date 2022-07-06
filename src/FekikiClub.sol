@@ -268,10 +268,10 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      */
     function revealWithRange(uint256 _startIndex, uint256 _amount) public {
         uint256 _end = _startIndex + _amount;
-        require(_end <= _totalMinted() - 1, "out of range");
+        require(_end <= _totalMinted() + _startTokenId(), "out of range");
 
         uint256[] memory _temp = new uint256[](_amount);
-        for (uint256 i = 0; i < _end; ) {
+        for (uint256 i = 0; i < _amount; ) {
             unchecked {
                 _temp[i] = _startIndex++;
                 i++;

@@ -70,4 +70,21 @@ describe('FekikiClub test', function () {
     const revealedTokens = await FekikiClub.revealedTokensAmount()
     expect(revealedTokens, `Revealed tokens amount not ${AMOUNT}`).to.equal(bn(AMOUNT));
   });
+
+  it('Test mintWhitelistAndReveal', async function () {
+    const { users, FekikiClub, MockVRFSystem } = await setup();
+
+    const MINT_AMOUNT = 1
+    const PROOF: string[] = []
+
+    const UNIT_PRICE = await FekikiClub.UNIT_PRICE()
+    await users.deployer.FekikiClub.setWhiteListMintTime(0, 999999999999999)
+    await users.deployer.FekikiClub.mintWhitelistAndReveal(MINT_AMOUNT, PROOF, { value: UNIT_PRICE.mul(MINT_AMOUNT) })
+
+    const requestId = await MockVRFSystem.requestId()
+    await MockVRFSystem.completeRequest(requestId, genArrayRandom(MINT_AMOUNT))
+
+    const revealedTokens = await FekikiClub.revealedTokensAmount()
+    expect(revealedTokens, `Revealed tokens amount not ${MINT_AMOUNT}`).to.equal(bn(MINT_AMOUNT));
+  });
 })
