@@ -13,7 +13,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts();
   const {
     vrfCoordinator,
-    chainlinkConfig
+    chainlinkConfig,
+    merkleRootHash
   } = deployConfig();
 
   if (hre.network.name === 'hardhat') {
@@ -22,7 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const fekikiDeployments = await deploy('TestFekikiClub', {
       from: deployer,
       contract: 'TestFekikiClub',
-      args: [MockVRFSystem.address, chainlinkConfig],
+      args: [MockVRFSystem.address, chainlinkConfig, merkleRootHash],
       log: true,
       skipIfAlreadyDeployed: false,
       gasLimit: 5500000,
@@ -35,7 +36,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const fekikiDeployments = await deploy('FekikiClub', {
     from: deployer,
     contract: 'FekikiClub',
-    args: [vrfCoordinator, chainlinkConfig],
+    args: [vrfCoordinator, chainlinkConfig, merkleRootHash],
     log: true,
     skipIfAlreadyDeployed: false,
     gasLimit: 5500000,

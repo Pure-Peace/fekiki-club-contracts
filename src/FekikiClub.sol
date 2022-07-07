@@ -48,20 +48,20 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     mapping(uint256 => uint16[]) private _tokenRevealRequest; // requestId => tokenIdList
     mapping(address => UserMintedData) private _userMinted; // address => NumberMintedData
 
-    uint256 public constant UNIT_PRICE = 0.1 ether;
-    uint256 public constant MAX_SUPPLY = 10000;
-    uint256 public constant TOTAL_MYSTERY_BOXES = 10000;
-    bytes32 public constant MERKLE_ROOT_HASH = 0x0c49cea42462c6e5f515343ec6496f739286ad6642b774100c3948cf1ce1c6e2;
+    uint256 public constant UNIT_PRICE = 0.0000001 ether;
 
-    uint256 public constant DEV_RESERVE = 180;
-    uint256 public constant WHITELIST_MINTING_SUPPLY = 7810;
+    uint256 public constant MAX_SUPPLY = 20;
+    uint256 public constant PUB_MINT_RESERVE = 4;
+    uint256 public constant DEV_RESERVE = 10;
+    uint256 public constant WHITELIST_MINTING_SUPPLY = 6;
 
     uint256 public constant PERSONAL_PUB_MINT_LIMIT = 1;
     uint256 public constant PERSONAL_WHITELIST_MINT_LIMIT = 2;
 
-    uint256 public constant WHITELIST_MINTING_START = 0;
-    uint256 public constant WHITELIST_MINTING_END = 9999999999;
+    uint256 public WHITELIST_MINTING_START;
+    uint256 public WHITELIST_MINTING_END;
 
+    bytes32 public immutable MERKLE_ROOT_HASH;
     VRFCoordinatorV2Interface public immutable VRF_COORDINATOR;
     ChainlinkConfig public chainlinkConfig;
 
@@ -75,10 +75,16 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     constructor(
         address _vrfCoordinator, // Chainlink VRF coordinator address
-        ChainlinkConfig memory _chainlinkConfig
+        ChainlinkConfig memory _chainlinkConfig,
+        bytes32 merkleRootHash
     ) ERC721A("FekikiClub", "FEKIKI") VRFConsumerBaseV2(_vrfCoordinator) {
+        require(
+            PUB_MINT_RESERVE + DEV_RESERVE + WHITELIST_MINTING_SUPPLY == MAX_SUPPLY,
+            "Incorrect quantity configuration"
+        );
         VRF_COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
         chainlinkConfig = _chainlinkConfig;
+        MERKLE_ROOT_HASH = merkleRootHash;
     }
 
     modifier supplyChecker(uint256 amount) {
@@ -91,20 +97,26 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         require(MerkleProof.verify(_merkleProof, MERKLE_ROOT_HASH, leaf), "Merkle verify failed");
     }
 
+    // FOR TEST
+    function setWhiteListMintTime(uint256 start, uint256 end) external onlyOwner {
+        WHITELIST_MINTING_START = start;
+        WHITELIST_MINTING_END = end;
+    }
+
     /**
      * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
      * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
      * by default, can be overriden in child contracts.
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return "https://revealed-token-metadata-URI/";
+        return "https://gateway.pinata.cloud/ipfs/QmXs2iu4y9tawjUHmvUxwCce4DCL8xeC9dYMgUvQbUXjFk/";
     }
 
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         if (!_exists(_tokenId)) revert URIQueryForNonexistentToken();
 
         if (_tokenRevealData[_tokenId].revealId == 0) {
-            return "https://unrevealed-token-metadata-URI/";
+            return "https://gateway.pinata.cloud/ipfs/QmdRW358Yk9R7o95KHvUgwVKC4XMgXo8viQmZX5rnEJ4TQ/";
         }
 
         return string(abi.encodePacked(_baseURI(), uint256(_tokenRevealData[_tokenId].revealId).toString()));
@@ -169,7 +181,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             );
 
             uint256 randomIndex = (randomWords[_tokenRevealData[tokenIdSeq[i]].requestSeq] %
-                (TOTAL_MYSTERY_BOXES - revealedTokensAmount)) + revealedTokensAmount;
+                (MAX_SUPPLY - revealedTokensAmount)) + revealedTokensAmount;
             uint256 revealId = _tokenIdMap(randomIndex);
             uint256 currentId = _tokenIdMap(revealedTokensAmount);
 
@@ -336,7 +348,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         );
         require(PUB_MINT_SUPPLY == 0, "Pub minting is already started");
         unchecked {
-            PUB_MINT_SUPPLY = WHITELIST_MINTING_SUPPLY - numberWhitelistMinted + 1000;
+            PUB_MINT_SUPPLY = WHITELIST_MINTING_SUPPLY - numberWhitelistMinted + PUB_MINT_RESERVE;
         }
     }
 

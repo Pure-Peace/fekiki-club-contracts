@@ -99,11 +99,13 @@ export async function deployContracts(deploy: DeployFunction) {
   console.log('\n>>>>>>>>> Deploying contracts...\n');
   const {
     vrfCoordinator,
-    chainlinkConfig
+    chainlinkConfig,
+    merkleRootHash
   } = deployConfig();
   return await deploy('FekikiClub', 'FekikiClub', [
     vrfCoordinator,
-    chainlinkConfig
+    chainlinkConfig,
+    merkleRootHash
   ]);
 }
 
