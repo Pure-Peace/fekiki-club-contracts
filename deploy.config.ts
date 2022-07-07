@@ -42,7 +42,7 @@ const config: { [key: string]: DeployConfig } = {
       requestConfirms: 0,
       callbackGasLimit: 0
     },
-    merkleRootHash: ''
+    merkleRootHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
   },
 };
 

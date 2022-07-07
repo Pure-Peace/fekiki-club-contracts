@@ -71,7 +71,7 @@ describe('FekikiClub test', function () {
     expect(revealedTokens, `Revealed tokens amount not ${AMOUNT}`).to.equal(bn(AMOUNT));
   });
 
-  it('Test mintWhitelistAndReveal', async function () {
+  /* it('Test mintWhitelistAndReveal', async function () {
     const { users, FekikiClub, MockVRFSystem } = await setup();
 
     const MINT_AMOUNT = 1
@@ -86,5 +86,5 @@ describe('FekikiClub test', function () {
 
     const revealedTokens = await FekikiClub.revealedTokensAmount()
     expect(revealedTokens, `Revealed tokens amount not ${MINT_AMOUNT}`).to.equal(bn(MINT_AMOUNT));
-  });
+  }); */
 })
