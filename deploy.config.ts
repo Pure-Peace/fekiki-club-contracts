@@ -30,7 +30,7 @@ const config: { [key: string]: DeployConfig } = {
       keyHash: '0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc',
       subscriptionId: 4811,
       requestConfirms: 3,
-      callbackGasLimit: 1000000
+      callbackGasLimit: 100000
     },
     merkleRootHash: '0x50ecc22abb1fa8080de47f7197930887fb1aa617c461969163d3e4c40ca18926'
   },
