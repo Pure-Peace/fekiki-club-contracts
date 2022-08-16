@@ -105,7 +105,7 @@ const config = {
     only: [':FekikiClub$'],
   },
   mocha: {
-    timeout: 0,
+    timeout: 100000000000000,
   },
   docgen: {
     path: './docs',

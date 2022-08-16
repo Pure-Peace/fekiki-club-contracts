@@ -48,15 +48,15 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     mapping(uint256 => uint16[]) private _tokenRevealRequest; // requestId => tokenIdList
     mapping(address => UserMintedData) private _userMinted; // address => NumberMintedData
 
-    uint256 public constant UNIT_PRICE = 0.0000001 ether;
+    uint256 public immutable UNIT_PRICE;
 
-    uint256 public constant MAX_SUPPLY = 20;
-    uint256 public constant PUB_MINT_RESERVE = 4;
-    uint256 public constant DEV_RESERVE = 10;
-    uint256 public constant WHITELIST_MINTING_SUPPLY = 6;
+    uint256 public immutable MAX_SUPPLY;
+    uint256 public immutable PUB_MINT_RESERVE;
+    uint256 public immutable DEV_RESERVE;
+    uint256 public immutable WHITELIST_MINTING_SUPPLY;
 
-    uint256 public constant PERSONAL_PUB_MINT_LIMIT = 1;
-    uint256 public constant PERSONAL_WHITELIST_MINT_LIMIT = 2;
+    uint256 public immutable PERSONAL_PUB_MINT_LIMIT;
+    uint256 public immutable PERSONAL_WHITELIST_MINT_LIMIT;
 
     uint256 public WHITELIST_MINTING_START;
     uint256 public WHITELIST_MINTING_END;
@@ -76,8 +76,22 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     constructor(
         address _vrfCoordinator, // Chainlink VRF coordinator address
         ChainlinkConfig memory _chainlinkConfig,
-        bytes32 merkleRootHash
+        bytes32 merkleRootHash,
+        uint256 unitPrice,
+        uint256 maxSupply,
+        uint256 pubMintReserve,
+        uint256 devReserve,
+        uint256 whiteListSupply,
+        uint256 personalPubMintLimit,
+        uint256 personalWhitelistMintLimit
     ) ERC721A("FekikiClub", "FEKIKI") VRFConsumerBaseV2(_vrfCoordinator) {
+        UNIT_PRICE = unitPrice;
+        MAX_SUPPLY = maxSupply;
+        PUB_MINT_RESERVE = pubMintReserve;
+        DEV_RESERVE = devReserve;
+        WHITELIST_MINTING_SUPPLY = whiteListSupply;
+        PERSONAL_PUB_MINT_LIMIT = personalPubMintLimit;
+        PERSONAL_WHITELIST_MINT_LIMIT = personalWhitelistMintLimit;
         require(
             PUB_MINT_RESERVE + DEV_RESERVE + WHITELIST_MINTING_SUPPLY == MAX_SUPPLY,
             "Incorrect quantity configuration"

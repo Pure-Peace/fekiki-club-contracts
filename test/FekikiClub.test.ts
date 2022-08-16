@@ -1,4 +1,4 @@
-import { expect } from './chai-setup';
+import {expect} from './chai-setup';
 import * as hre from 'hardhat';
 import {
   deployments,
@@ -7,68 +7,92 @@ import {
   getUnnamedAccounts,
 } from 'hardhat';
 
-import { setupUser, setupUsers, setupUsersWithNames } from './utils';
-import { getContractForEnvironment } from './utils/getContractForEnvironment';
-import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
-import { TestFekikiClub as ITestFekikiClub, MockVRFSystem as IMockVRFSystem } from '../typechain';
+import {setupUser, setupUsers, setupUsersWithNames} from './utils';
+import {getContractForEnvironment} from './utils/getContractForEnvironment';
+import {BigNumber, BigNumberish} from '@ethersproject/bignumber';
+import {
+  TestFekikiClub as ITestFekikiClub,
+  MockVRFSystem as IMockVRFSystem,
+} from '../typechain';
 
-const bn = (num: BigNumberish) => BigNumber.from(num)
-const genArray = (start: number, length: number) => Array.from({ length }, (_, index) => index + start)
+const bn = (num: BigNumberish) => BigNumber.from(num);
+const genArray = (start: number, length: number) =>
+  Array.from({length}, (_, index) => index + start);
 const random = () => bn((Math.random() * 100000000000).toFixed(0));
-const genArrayRandom = (length: number) => Array.from({ length }, () => random())
+const genArrayRandom = (length: number) => Array.from({length}, () => random());
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('MockVRFSystem');
   await deployments.fixture('FekikiClub');
   const contracts = {
-    MockVRFSystem: await getContractForEnvironment<IMockVRFSystem>(hre, 'MockVRFSystem'),
-    FekikiClub: await getContractForEnvironment<ITestFekikiClub>(hre, 'TestFekikiClub'),
+    MockVRFSystem: await getContractForEnvironment<IMockVRFSystem>(
+      hre,
+      'MockVRFSystem'
+    ),
+    FekikiClub: await getContractForEnvironment<ITestFekikiClub>(
+      hre,
+      'TestFekikiClub'
+    ),
   };
-  const users = await setupUsersWithNames((await getNamedAccounts()) as any, contracts);
+  const users = await setupUsersWithNames(
+    (await getNamedAccounts()) as any,
+    contracts
+  );
   return {
     ...contracts,
     users,
   };
 });
 
-
 describe('MockVRFSystem test', function () {
   it('MockVRFSystem has been setup', async function () {
-    const { MockVRFSystem, FekikiClub } = await setup();
-    const requestId = await MockVRFSystem.requestId()
+    const {MockVRFSystem, FekikiClub} = await setup();
+    const requestId = await MockVRFSystem.requestId();
     expect(requestId, 'initial requestId should be 0').to.equal(bn(0));
 
-    const fekikiClubAddress = await MockVRFSystem.fekikiClub()
-    expect(fekikiClubAddress, `invalid fekikiClub address "${fekikiClubAddress}"`).to.equal(FekikiClub.address);
+    const fekikiClubAddress = await MockVRFSystem.fekikiClub();
+    expect(
+      fekikiClubAddress,
+      `invalid fekikiClub address "${fekikiClubAddress}"`
+    ).to.equal(FekikiClub.address);
   });
-})
-
+});
 
 describe('FekikiClub test', function () {
   it('Should mint 100 FEKIKI to address', async function () {
-    const { users, FekikiClub } = await setup();
+    const {users, FekikiClub} = await setup();
 
     const user = users.deployer.address;
-    await FekikiClub.testMint(100, user)
+    await FekikiClub.testMint(100, user);
 
-    const balance = await FekikiClub.balanceOf(user)
+    const balance = await FekikiClub.balanceOf(user);
     expect(balance, 'balance not 100').to.equal(bn(100));
   });
 
-  it('Reveal 20 FEKIKI', async function () {
-    const { users, FekikiClub, MockVRFSystem } = await setup();
+  it('Reveal FEKIKI test', async function () {
+    const {users, FekikiClub, MockVRFSystem} = await setup();
 
-    const AMOUNT = 20
+    const START = 1;
+    const TOTAL = 1000;
+    const STEP = 50;
 
     const user = users.deployer.address;
-    await FekikiClub.testMint(AMOUNT, user)
 
-    const requestId = (await MockVRFSystem.requestId()).add(1);
-    await users.deployer.FekikiClub.requestTokenReveal(genArray(1, AMOUNT))
-    await MockVRFSystem.completeRequest(requestId, genArrayRandom(AMOUNT))
+    await FekikiClub.testMint(TOTAL, user);
 
-    const revealedTokens = await FekikiClub.revealedTokensAmount()
-    expect(revealedTokens, `Revealed tokens amount not ${AMOUNT}`).to.equal(bn(AMOUNT));
+    for (let round = 0; round < TOTAL / STEP; round++) {
+      console.log('round:', round);
+      const requestId = (await MockVRFSystem.requestId()).add(1);
+      await users.deployer.FekikiClub.requestTokenReveal(
+        genArray(START + round * STEP, STEP)
+      );
+      await MockVRFSystem.completeRequest(requestId, genArrayRandom(STEP));
+    }
+
+    const revealedTokens = await FekikiClub.revealedTokensAmount();
+    expect(revealedTokens, `Revealed tokens amount not ${TOTAL}`).to.equal(
+      bn(TOTAL)
+    );
   });
 
   /* it('Test mintWhitelistAndReveal', async function () {
@@ -87,4 +111,4 @@ describe('FekikiClub test', function () {
     const revealedTokens = await FekikiClub.revealedTokensAmount()
     expect(revealedTokens, `Revealed tokens amount not ${MINT_AMOUNT}`).to.equal(bn(MINT_AMOUNT));
   }); */
-})
+});

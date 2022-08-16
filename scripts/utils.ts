@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import hre from 'hardhat';
-import { ContractTransaction } from 'ethers';
-import { DeployResult } from 'hardhat-deploy/types';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {ContractTransaction} from 'ethers';
+import {DeployResult} from 'hardhat-deploy/types';
+import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
-import NETWORK_DEPLOY_CONFIG, { DeployConfig } from '../deploy.config';
+import NETWORK_DEPLOY_CONFIG, {DeployConfig} from '../deploy.config';
 
 export const GAS_LIMIT = 5500000;
 
 require('dotenv').config();
 
-const { deploy: _dep } = hre.deployments;
+const {deploy: _dep} = hre.deployments;
 
 let __DEPLOY_CONFIG: DeployConfig;
 export function deployConfig() {
@@ -29,7 +29,7 @@ export type DeployFunction = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   args?: string[] | any[]
 ) => Promise<DeployResult>;
-export type Deployments = { [key: string]: DeployResult };
+export type Deployments = {[key: string]: DeployResult};
 
 export async function setup(): Promise<{
   accounts: SignerWithAddress[];
@@ -70,9 +70,12 @@ export async function setup(): Promise<{
         from: deployer.address,
       });
       console.log(
-        `${deployResult.newlyDeployed ? '[New]' : '[Reused]'
-        } contract "${deployName}" ("${contractName}") deployed at "${deployResult.address
-        }" \n - tx: "${deployResult.transactionHash}" \n - gas: ${deployResult.receipt?.gasUsed
+        `${
+          deployResult.newlyDeployed ? '[New]' : '[Reused]'
+        } contract "${deployName}" ("${contractName}") deployed at "${
+          deployResult.address
+        }" \n - tx: "${deployResult.transactionHash}" \n - gas: ${
+          deployResult.receipt?.gasUsed
         } \n - deployer: "${deployer.address}"`
       );
       return deployResult;
@@ -100,17 +103,31 @@ export async function deployContracts(deploy: DeployFunction) {
   const {
     vrfCoordinator,
     chainlinkConfig,
-    merkleRootHash
+    merkleRootHash,
+    unitPrice,
+    maxSupply,
+    pubMintReserve,
+    devReserve,
+    whiteListSupply,
+    personalPubMintLimit,
+    personalWhitelistMintLimit,
   } = deployConfig();
   return await deploy('FekikiClub', 'FekikiClub', [
     vrfCoordinator,
     chainlinkConfig,
-    merkleRootHash
+    merkleRootHash,
+    unitPrice,
+    maxSupply,
+    pubMintReserve,
+    devReserve,
+    whiteListSupply,
+    personalPubMintLimit,
+    personalWhitelistMintLimit,
   ]);
 }
 
 export async function deployFekikiClub() {
-  const { deployer, deploy } = await setup();
+  const {deployer, deploy} = await setup();
   const deployments = await deployContracts(deploy);
   console.log('>>> CONTRACTS SETUP DONE <<<');
 }
