@@ -34,13 +34,11 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         uint128 pubMint;
     }
 
-    // Compiler will pack this into a single 256bit word.
     struct RevealData {
         // request sequence
-        uint168 requestSeq;
+        uint192 requestSeq;
         uint64 revealId;
-        // request flag
-        bool requested;
+        uint256 requestId;
     }
 
     mapping(uint256 => uint256) private _tokenIdMapInner;
@@ -169,7 +167,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     function _tokenIdMap(uint256 _tokenIndex) private view returns (uint256) {
         if (_tokenIdMapInner[_tokenIndex] == 0) {
-            return _tokenIndex + 1;
+            return _tokenIndex + _startTokenId();
         }
         return _tokenIdMapInner[_tokenIndex];
     }
@@ -189,10 +187,8 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         require(tokenIdSeq.length > 0, "Request not exists");
         require(randomWords.length == tokenIdSeq.length, "Array length mismatch");
         for (uint256 i = 0; i < tokenIdSeq.length; ) {
-            require(
-                _tokenRevealData[tokenIdSeq[i]].requested && _tokenRevealData[tokenIdSeq[i]].revealId == 0,
-                "Not requested or already revealed"
-            );
+            require(_tokenRevealData[tokenIdSeq[i]].requestId == requestId, "Incorrect request id");
+            require(_tokenRevealData[tokenIdSeq[i]].revealId == 0, "Already revealed");
 
             uint256 randomIndex = (randomWords[_tokenRevealData[tokenIdSeq[i]].requestSeq] %
                 (MAX_SUPPLY - revealedTokensAmount)) + revealedTokensAmount;
@@ -208,7 +204,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
                 i++;
             }
         }
-        _tokenRevealRequest[requestId] = new uint16[](0);
+        delete _tokenRevealRequest[requestId];
     }
 
     function withdraw(address payable _to) external payable onlyOwner {
@@ -334,10 +330,10 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
         for (uint256 i = 0; i < _tokenIds.length; ) {
             require(ownerOf(_tokenIds[i]) == msg.sender, "Not token owner");
-            require(!_tokenRevealData[_tokenIds[i]].requested, "Already requested");
+            require(_tokenRevealData[_tokenIds[i]].revealId == 0, "Already revealed");
 
-            _tokenRevealData[_tokenIds[i]].requested = true;
-            _tokenRevealData[_tokenIds[i]].requestSeq = uint168(i);
+            _tokenRevealData[_tokenIds[i]].requestId = requestId;
+            _tokenRevealData[_tokenIds[i]].requestSeq = uint192(i);
             _tokenRevealRequest[requestId].push(uint16(_tokenIds[i]));
 
             emit RevealRequested(_tokenIds[i], requestId);
@@ -361,9 +357,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             "Whitelist minting is not over"
         );
         require(PUB_MINT_SUPPLY == 0, "Pub minting is already started");
-        unchecked {
-            PUB_MINT_SUPPLY = WHITELIST_MINTING_SUPPLY - numberWhitelistMinted + PUB_MINT_RESERVE;
-        }
+        PUB_MINT_SUPPLY = PUB_MINT_RESERVE + WHITELIST_MINTING_SUPPLY - numberWhitelistMinted;
     }
 
     /**
