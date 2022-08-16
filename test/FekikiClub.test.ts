@@ -74,7 +74,7 @@ describe('FekikiClub test', function () {
 
     const START = 1;
     const TOTAL = 1000;
-    const STEP = 50;
+    const STEP = 20;
 
     const user = users.deployer.address;
 
