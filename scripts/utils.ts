@@ -100,29 +100,11 @@ export function waitContractCall(
 
 export async function deployContracts(deploy: DeployFunction) {
   console.log('\n>>>>>>>>> Deploying contracts...\n');
-  const {
-    vrfCoordinator,
-    chainlinkConfig,
-    merkleRootHash,
-    unitPrice,
-    maxSupply,
-    pubMintReserve,
-    devReserve,
-    whiteListSupply,
-    personalPubMintLimit,
-    personalWhitelistMintLimit,
-  } = deployConfig();
+  const {vrfCoordinator, chainlinkConfig, fekikiConfig} = deployConfig();
   return await deploy('FekikiClub', 'FekikiClub', [
     vrfCoordinator,
     chainlinkConfig,
-    merkleRootHash,
-    unitPrice,
-    maxSupply,
-    pubMintReserve,
-    devReserve,
-    whiteListSupply,
-    personalPubMintLimit,
-    personalWhitelistMintLimit,
+    fekikiConfig,
   ]);
 }
 

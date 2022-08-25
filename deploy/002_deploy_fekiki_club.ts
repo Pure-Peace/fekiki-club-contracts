@@ -11,18 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {deploy} = deployments;
 
   const {deployer} = await getNamedAccounts();
-  const {
-    vrfCoordinator,
-    chainlinkConfig,
-    merkleRootHash,
-    unitPrice,
-    maxSupply,
-    pubMintReserve,
-    devReserve,
-    whiteListSupply,
-    personalPubMintLimit,
-    personalWhitelistMintLimit,
-  } = deployConfig();
+  const {vrfCoordinator, chainlinkConfig, fekikiConfig} = deployConfig();
 
   if (hre.network.name === 'hardhat') {
     const MockVRFSystem = await getContractForEnvironment<IMockVRFSystem>(
@@ -33,18 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const fekikiDeployments = await deploy('TestFekikiClub', {
       from: deployer,
       contract: 'TestFekikiClub',
-      args: [
-        MockVRFSystem.address,
-        chainlinkConfig,
-        merkleRootHash,
-        unitPrice,
-        maxSupply,
-        pubMintReserve,
-        devReserve,
-        whiteListSupply,
-        personalPubMintLimit,
-        personalWhitelistMintLimit,
-      ],
+      args: [MockVRFSystem.address, chainlinkConfig, fekikiConfig],
       log: true,
       skipIfAlreadyDeployed: false,
       gasLimit: 5500000,
@@ -59,18 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const fekikiDeployments = await deploy('FekikiClub', {
     from: deployer,
     contract: 'FekikiClub',
-    args: [
-      vrfCoordinator,
-      chainlinkConfig,
-      merkleRootHash,
-      unitPrice,
-      maxSupply,
-      pubMintReserve,
-      devReserve,
-      whiteListSupply,
-      personalPubMintLimit,
-      personalWhitelistMintLimit,
-    ],
+    args: [vrfCoordinator, chainlinkConfig, fekikiConfig],
     log: true,
     skipIfAlreadyDeployed: false,
     gasLimit: 5500000,
