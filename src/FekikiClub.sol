@@ -20,12 +20,29 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     event RevealRequested(uint256 indexed tokenId, uint256 requestId);
     event Revealed(uint256 indexed tokenId, uint256 revealId);
+    event BridgeContractChanged(address indexed bridgeContract);
+    event CommonTokenUriChanged(string commonTokenUri);
+    event Freezed();
 
     struct ChainlinkConfig {
         bytes32 keyHash;
         uint64 subscriptionId;
         uint16 requestConfirms;
         uint32 callbackGasLimit;
+    }
+
+    struct FekikiConfig {
+        bytes32 merkleRootHash;
+        uint256 unitPrice;
+        uint256 maxSupply;
+        uint256 pubMintReserve;
+        uint256 devReserve;
+        uint256 whiteListSupply;
+        uint256 personalPubMintLimit;
+        uint256 personalWhitelistMintLimit;
+        string revealedTokenUri;
+        string mysteryBoxUri;
+        string commonTokenUri;
     }
 
     // Compiler will pack this into a single 256bit word.
@@ -68,35 +85,36 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     uint256 public numberWhitelistMinted;
     uint256 public numberPublicMinted;
 
+    string public REVEALED_TOKEN_URI;
+    string public COMMON_TOKEN_URI;
+    string public MYSTERY_BOX_URI;
+
+    address public bridgeContract;
+
     // When the PUB_MINT_SUPPLY is 0, it means that public minting has not started.
     uint256 public PUB_MINT_SUPPLY;
+
+    bool private frozen;
 
     constructor(
         address _vrfCoordinator, // Chainlink VRF coordinator address
         ChainlinkConfig memory _chainlinkConfig,
-        bytes32 merkleRootHash,
-        uint256 unitPrice,
-        uint256 maxSupply,
-        uint256 pubMintReserve,
-        uint256 devReserve,
-        uint256 whiteListSupply,
-        uint256 personalPubMintLimit,
-        uint256 personalWhitelistMintLimit
+        FekikiConfig memory _cfg
     ) ERC721A("FekikiClub", "FEKIKI") VRFConsumerBaseV2(_vrfCoordinator) {
-        UNIT_PRICE = unitPrice;
-        MAX_SUPPLY = maxSupply;
-        PUB_MINT_RESERVE = pubMintReserve;
-        DEV_RESERVE = devReserve;
-        WHITELIST_MINTING_SUPPLY = whiteListSupply;
-        PERSONAL_PUB_MINT_LIMIT = personalPubMintLimit;
-        PERSONAL_WHITELIST_MINT_LIMIT = personalWhitelistMintLimit;
-        require(
-            PUB_MINT_RESERVE + DEV_RESERVE + WHITELIST_MINTING_SUPPLY == MAX_SUPPLY,
-            "Incorrect quantity configuration"
-        );
         VRF_COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
         chainlinkConfig = _chainlinkConfig;
-        MERKLE_ROOT_HASH = merkleRootHash;
+
+        UNIT_PRICE = _cfg.unitPrice;
+        MAX_SUPPLY = _cfg.maxSupply;
+        PUB_MINT_RESERVE = _cfg.pubMintReserve;
+        DEV_RESERVE = _cfg.devReserve;
+        WHITELIST_MINTING_SUPPLY = _cfg.whiteListSupply;
+        PERSONAL_PUB_MINT_LIMIT = _cfg.personalPubMintLimit;
+        PERSONAL_WHITELIST_MINT_LIMIT = _cfg.personalWhitelistMintLimit;
+        REVEALED_TOKEN_URI = _cfg.revealedTokenUri;
+        MYSTERY_BOX_URI = _cfg.mysteryBoxUri;
+        COMMON_TOKEN_URI = _cfg.commonTokenUri;
+        MERKLE_ROOT_HASH = _cfg.merkleRootHash;
     }
 
     modifier supplyChecker(uint256 amount) {
@@ -109,7 +127,6 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         require(MerkleProof.verify(_merkleProof, MERKLE_ROOT_HASH, leaf), "Merkle verify failed");
     }
 
-    // FOR TEST
     function setWhiteListMintTime(uint256 start, uint256 end) external onlyOwner {
         WHITELIST_MINTING_START = start;
         WHITELIST_MINTING_END = end;
@@ -121,17 +138,27 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      * by default, can be overriden in child contracts.
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return "https://gateway.pinata.cloud/ipfs/QmXs2iu4y9tawjUHmvUxwCce4DCL8xeC9dYMgUvQbUXjFk/";
+        return REVEALED_TOKEN_URI;
+    }
+
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         if (!_exists(_tokenId)) revert URIQueryForNonexistentToken();
 
-        if (_tokenRevealData[_tokenId].revealId == 0) {
-            return "https://gateway.pinata.cloud/ipfs/QmdRW358Yk9R7o95KHvUgwVKC4XMgXo8viQmZX5rnEJ4TQ/";
+        string memory _base;
+
+        if (_tokenId >= mysteryBoxAmount() + _startTokenId()) {
+            _base = COMMON_TOKEN_URI;
+        } else if (_tokenRevealData[_tokenId].revealId == 0) {
+            return MYSTERY_BOX_URI;
+        } else {
+            _base = _baseURI();
         }
 
-        return string(abi.encodePacked(_baseURI(), uint256(_tokenRevealData[_tokenId].revealId).toString()));
+        return string(abi.encodePacked(_base, uint256(_tokenRevealData[_tokenId].revealId).toString()));
     }
 
     function userMinted(address user) external view returns (UserMintedData memory) {
@@ -143,6 +170,10 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      */
     function totalMinted() external view returns (uint256) {
         return _totalMinted();
+    }
+
+    function mysteryBoxAmount() public view returns (uint256) {
+        return WHITELIST_MINTING_SUPPLY + PUB_MINT_RESERVE + DEV_RESERVE;
     }
 
     /**
@@ -191,7 +222,7 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             require(_tokenRevealData[tokenIdSeq[i]].revealId == 0, "Already revealed");
 
             uint256 randomIndex = (randomWords[_tokenRevealData[tokenIdSeq[i]].requestSeq] %
-                (MAX_SUPPLY - revealedTokensAmount)) + revealedTokensAmount;
+                (mysteryBoxAmount() - revealedTokensAmount)) + revealedTokensAmount;
             uint256 revealId = _tokenIdMap(randomIndex);
             uint256 currentId = _tokenIdMap(revealedTokensAmount);
 
@@ -210,6 +241,30 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     function withdraw(address payable _to) external payable onlyOwner {
         (bool success, ) = _to.call{value: address(this).balance}("");
         require(success);
+    }
+
+    function setBridgeContract(address _bridgeContract) external onlyOwner {
+        bridgeContract = _bridgeContract;
+        emit BridgeContractChanged(bridgeContract);
+    }
+
+    function setCommonTokenUri(string memory commonTokenUri) external onlyOwner {
+        require(!frozen);
+        COMMON_TOKEN_URI = commonTokenUri;
+        emit CommonTokenUriChanged(commonTokenUri);
+    }
+
+    function freeze() external onlyOwner {
+        require(!frozen);
+        frozen = true;
+        emit Freezed();
+    }
+
+    function bridgeMint(uint256 _amount, address _to) external supplyChecker(_amount) returns (uint256) {
+        require(msg.sender == bridgeContract, "Unauthorized operation");
+        uint256 startId = _currentIndex;
+        _safeMint(_to, _amount);
+        return startId;
     }
 
     /**
@@ -298,7 +353,10 @@ contract FekikiClub is ERC721A, Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
      */
     function revealWithRange(uint256 _startIndex, uint256 _amount) public {
         uint256 _end = _startIndex + _amount;
-        require(_end <= _totalMinted() + _startTokenId(), "out of range");
+        require(
+            (_startIndex >= _startTokenId()) && (_end <= _min(mysteryBoxAmount(), _totalMinted()) + _startTokenId()),
+            "out of range"
+        );
 
         uint256[] memory _temp = new uint256[](_amount);
         for (uint256 i = 0; i < _amount; ) {
